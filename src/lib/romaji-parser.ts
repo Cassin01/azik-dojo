@@ -44,8 +44,23 @@ const entries = parseRomajiTable(romajiTableText)
 const hiraganaToRomaji = buildHiraganaToRomajiMap(entries)
 const romajiToHiragana = buildRomajiToHiraganaMap(entries)
 
-export function getRomajiOptions(hiragana: string): string[] {
-  return hiraganaToRomaji.get(hiragana) || []
+export function isStandardRomaji(romaji: string): boolean {
+  if (/[aiueo]$/.test(romaji)) return true
+  if (['nn', 'ltu', 'xtu'].includes(romaji)) return true
+  if (/^l[aiueo]$/.test(romaji)) return true
+  if (/^ly[auo]$/.test(romaji)) return true
+  if (romaji === 'lwa') return true
+  return false
+}
+
+export function filterForStrictMode(options: string[]): string[] {
+  const azikOnly = options.filter(r => !isStandardRomaji(r))
+  return azikOnly.length > 0 ? azikOnly : options
+}
+
+export function getRomajiOptions(hiragana: string, strictMode: boolean = false): string[] {
+  const options = hiraganaToRomaji.get(hiragana) || []
+  return strictMode ? filterForStrictMode(options) : options
 }
 
 export function getHiragana(romaji: string): string | undefined {
@@ -80,9 +95,10 @@ export type MatchResult = {
 
 export function checkInputAgainstHiragana(
   input: string,
-  targetHiragana: string
+  targetHiragana: string,
+  strictMode: boolean = false
 ): MatchResult {
-  const validRomaji = getRomajiOptions(targetHiragana)
+  const validRomaji = getRomajiOptions(targetHiragana, strictMode)
   if (validRomaji.length === 0) {
     return { type: 'wrong', validRomaji: [] }
   }
@@ -134,7 +150,8 @@ export type InputCheckResult = {
 
 export function checkInputForWord(
   input: string,
-  remainingHiragana: string
+  remainingHiragana: string,
+  strictMode: boolean = false
 ): InputCheckResult {
   if (remainingHiragana.length === 0) {
     return { status: 'wrong' }
@@ -142,7 +159,7 @@ export function checkInputForWord(
 
   for (let hiraganaLen = Math.min(remainingHiragana.length, 4); hiraganaLen >= 1; hiraganaLen--) {
     const targetHiragana = remainingHiragana.slice(0, hiraganaLen)
-    const validRomaji = getRomajiOptions(targetHiragana)
+    const validRomaji = getRomajiOptions(targetHiragana, strictMode)
 
     if (validRomaji.length === 0) continue
 
@@ -171,7 +188,7 @@ export function checkInputForWord(
   }
 
   const firstChar = remainingHiragana[0]
-  const validRomaji = getRomajiOptions(firstChar)
+  const validRomaji = getRomajiOptions(firstChar, strictMode)
   return {
     status: 'wrong',
     validRomajiForCurrentChar: validRomaji.length > 0 ? validRomaji : undefined,

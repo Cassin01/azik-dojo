@@ -21,9 +21,12 @@ export type GameStats = {
   wordsCompleted: number
 }
 
-const WORD_COUNT = 10
+export type UseTypingGameOptions = {
+  strictMode?: boolean
+}
 
-export function useTypingGame() {
+export function useTypingGame(options: UseTypingGameOptions = {}) {
+  const { strictMode = false } = options
   const [gameState, setGameState] = useState<GameState>('idle')
   const [words, setWords] = useState<string[]>([])
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
@@ -50,7 +53,7 @@ export function useTypingGame() {
       let matched = false
       for (let len = Math.min(word.length - i, 4); len >= 1; len--) {
         const substr = word.slice(i, i + len)
-        const romajiOptions = getRomajiOptions(substr)
+        const romajiOptions = getRomajiOptions(substr, strictMode)
         if (romajiOptions.length > 0) {
           chars.push({
             hiragana: substr,
@@ -77,10 +80,10 @@ export function useTypingGame() {
       chars[0].status = 'current'
     }
     return chars
-  }, [])
+  }, [strictMode])
 
-  const startGame = useCallback(() => {
-    const newWords = getRandomWords(WORD_COUNT)
+  const startGame = useCallback((wordCount: number = 20) => {
+    const newWords = getRandomWords(wordCount)
     setWords(newWords)
     setCurrentWordIndex(0)
     setCharStates(initializeWord(newWords[0]))
@@ -142,14 +145,15 @@ export function useTypingGame() {
     if (!currentChar) return
 
     const newInput = currentInput + key
-    const remainingHiragana = charStates
-      .slice(currentCharIndex)
-      .map(c => c.hiragana)
-      .join('')
+    const currentHiragana = currentChar.hiragana
 
-    const result = checkInputForWord(newInput, remainingHiragana)
+    const result = checkInputForWord(newInput, currentHiragana, strictMode)
 
     if (result.status === 'correct') {
+      if (result.matchedHiragana !== currentHiragana) {
+        setCurrentInput(newInput)
+        return
+      }
       setCharStates(prev => {
         const updated = [...prev]
         updated[currentCharIndex] = {

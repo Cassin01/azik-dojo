@@ -4,11 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WordDisplay } from '@/components/WordDisplay'
 import { Stats } from '@/components/Stats'
 import { History } from '@/components/History'
+import { QuestionCountSelector } from '@/components/QuestionCountSelector'
+import { StrictModeToggle } from '@/components/StrictModeToggle'
 import { useTypingGame } from '@/hooks/useTypingGame'
 import { useHistory } from '@/hooks/useHistory'
+import { useSettings } from '@/hooks/useSettings'
 
 function App() {
-  const game = useTypingGame()
+  const {
+    questionCount,
+    setQuestionCount,
+    questionCountOptions,
+    strictMode,
+    setStrictMode,
+  } = useSettings()
+  const game = useTypingGame({ strictMode })
   const history = useHistory()
 
   useEffect(() => {
@@ -44,7 +54,13 @@ function App() {
                 <br />
                 Romaji hints will appear when you make a mistake.
               </p>
-              <Button size="lg" onClick={game.startGame}>
+              <QuestionCountSelector
+                value={questionCount}
+                options={questionCountOptions}
+                onChange={setQuestionCount}
+              />
+              <StrictModeToggle value={strictMode} onChange={setStrictMode} />
+              <Button size="lg" onClick={() => game.startGame(questionCount)}>
                 Start Practice
               </Button>
             </CardContent>
@@ -105,7 +121,7 @@ function App() {
                 </div>
 
                 <div className="flex justify-center gap-4">
-                  <Button size="lg" onClick={game.startGame}>
+                  <Button size="lg" onClick={() => game.startGame(questionCount)}>
                     Try Again
                   </Button>
                 </div>
