@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+:root {
+  --radius: 0.5rem;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
